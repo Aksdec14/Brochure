@@ -1,0 +1,125 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Download Brochures</title>
+<style>
+  * { box-sizing: border-box; }
+  body { margin: 0; font-family: system-ui, sans-serif; background: #f5f6f8; color: #1a1a1a; }
+  .wrap { max-width: 960px; margin: 0 auto; padding: 48px 20px; }
+  h1 { margin: 0 0 8px; } .sub { color: #666; margin: 0 0 32px; }
+  .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 20px; }
+  .card { background: #fff; border-radius: 12px; padding: 24px; box-shadow: 0 1px 3px rgba(0,0,0,.08); display: flex; flex-direction: column; }
+  .card h3 { margin: 0 0 8px; } .card p { color: #666; flex: 1; margin: 0 0 20px; }
+  button { cursor: pointer; border: 0; border-radius: 8px; padding: 12px 18px; font-size: 15px; font-weight: 600; background: #111; color: #fff; }
+  button:disabled { opacity: .5; cursor: not-allowed; }
+  .link { background: none; color: #111; text-decoration: underline; padding: 8px 0; font-weight: 500; }
+  .overlay { position: fixed; inset: 0; background: rgba(0,0,0,.5); display: none; align-items: center; justify-content: center; padding: 20px; }
+  .overlay.open { display: flex; }
+  .modal { background: #fff; border-radius: 14px; padding: 28px; width: 100%; max-width: 400px; position: relative; }
+  .close { position: absolute; top: 10px; right: 14px; background: none; color: #888; font-size: 22px; padding: 4px; }
+  input { width: 100%; padding: 12px; font-size: 16px; border: 1px solid #ccc; border-radius: 8px; margin: 12px 0; }
+  .otp { text-align: center; font-size: 26px; letter-spacing: 10px; }
+  .msg { font-size: 14px; min-height: 20px; } .err { color: #c0392b; } .ok { color: #1e8449; }
+  .full { width: 100%; } .hidden { display: none; }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1>Our Brochures</h1>
+  <p class="sub">Verify your email once to download any brochure.</p>
+  <div class="grid">
+    <div class="card"><h3>Product Catalog</h3><p>Our full range of products and specifications.</p><button data-id="product-catalog">Download</button></div>
+    <div class="card"><h3>Pricing Guide</h3><p>Plans, packages and pricing details.</p><button data-id="pricing-guide">Download</button></div>
+    <div class="card"><h3>Company Profile</h3><p>Who we are, what we do and our clients.</p><button data-id="company-profile">Download</button></div>
+  </div>
+</div>
+
+<div class="overlay" id="overlay">
+  <div class="modal">
+    <button class="close" id="closeBtn" aria-label="Close">&times;</button>
+    <div id="stepEmail">
+      <h2>Verify your email</h2>
+      <p class="sub" style="margin:0">We'll send a 6-digit code to your inbox.</p>
+      <input type="email" id="email" placeholder="you@company.com" autocomplete="email" />
+      <button class="full" id="sendBtn">Send code</button>
+    </div>
+    <div id="stepOtp" class="hidden">
+      <h2>Enter code</h2>
+      <p class="sub" style="margin:0">Sent to <b id="sentTo"></b></p>
+      <input id="code" class="otp" inputmode="numeric" maxlength="6" placeholder="••••••" autocomplete="one-time-code" />
+      <button class="full" id="verifyBtn">Verify &amp; download</button>
+      <button class="link" id="resendBtn">Resend code</button>
+      <button class="link" id="changeBtn">Change email</button>
+    </div>
+    <p class="msg" id="msg"></p>
+  </div>
+</div>
+
+<script>
+  const API = ""; // same origin; set to "https://your-server.com" if hosted separately
+  const $ = (id) => document.getElementById(id);
+  let pendingId = null, email = "";
+
+  const getToken = () => { try { return localStorage.getItem("dl_token"); } catch { return null; } };
+  const setToken = (t) => { try { localStorage.setItem("dl_token", t); } catch {} };
+
+  function msg(text, ok) { $("msg").textContent = text; $("msg").className = "msg " + (ok ? "ok" : "err"); }
+  function step(which) {
+    $("stepEmail").classList.toggle("hidden", which !== "email");
+    $("stepOtp").classList.toggle("hidden", which !== "otp");
+  }
+  function openModal() { $("overlay").classList.add("open"); step("email"); msg(""); $("email").focus(); }
+  function closeModal() { $("overlay").classList.remove("open"); }
+
+  async function download(id) {
+    const token = getToken();
+    if (!token) { pendingId = id; return openModal(); }
+    const url = `${API}/api/download/${id}?token=${token}`;
+    const head = await fetch(url, { method: "HEAD" });
+    if (head.status === 401) { localStorage.removeItem("dl_token"); pendingId = id; return openModal(); }
+    window.location.href = url;
+  }
+
+  async function post(path, body) {
+    const r = await fetch(API + path, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body) });
+    const data = await r.json().catch(() => ({}));
+    if (!r.ok) throw new Error(data.error || "Something went wrong.");
+    return data;
+  }
+
+  async function sendCode() {
+    email = $("email").value.trim();
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(email)) return msg("Enter a valid email.");
+    $("sendBtn").disabled = $("resendBtn").disabled = true; msg("Sending…", true);
+    try {
+      await post("/api/send-otp", { email });
+      $("sentTo").textContent = email; step("otp"); msg("Code sent! Check your inbox (and spam).", true);
+      $("code").value = ""; $("code").focus();
+    } catch (e) { msg(e.message); }
+    finally { $("sendBtn").disabled = $("resendBtn").disabled = false; }
+  }
+
+  async function verify() {
+    const code = $("code").value.trim();
+    if (!/^\d{6}$/.test(code)) return msg("Enter the 6-digit code.");
+    $("verifyBtn").disabled = true;
+    try {
+      const { token } = await post("/api/verify-otp", { email, code });
+      setToken(token); msg("Verified! Starting download…", true);
+      setTimeout(() => { closeModal(); if (pendingId) download(pendingId); }, 700);
+    } catch (e) { msg(e.message); }
+    finally { $("verifyBtn").disabled = false; }
+  }
+
+  document.querySelectorAll("[data-id]").forEach((b) => b.onclick = () => download(b.dataset.id));
+  $("sendBtn").onclick = sendCode;
+  $("resendBtn").onclick = sendCode;
+  $("verifyBtn").onclick = verify;
+  $("changeBtn").onclick = () => { step("email"); msg(""); };
+  $("closeBtn").onclick = closeModal;
+  $("email").onkeydown = (e) => e.key === "Enter" && sendCode();
+  $("code").oninput = (e) => { e.target.value = e.target.value.replace(/\D/g, ""); if (e.target.value.length === 6) verify(); };
+</script>
+</body>
+</html>
