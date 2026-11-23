@@ -2,55 +2,133 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
-<title>Download Brochures</title>
+<title>Fusionedge · Brochures</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Public+Sans:wght@400;500;600;700&display=swap" rel="stylesheet" />
 <style>
+  :root {
+    --purple: #5D1F72; --purple-soft: #F3ECF6; --green: #00BF88; --green-soft: #E6F8F2;
+    --ink: #16161A; --muted: #6B6B76; --line: #E6E6EA; --bg: #EEF1F3;
+  }
   * { box-sizing: border-box; }
-  body { margin: 0; font-family: system-ui, sans-serif; background: #f5f6f8; color: #1a1a1a; }
-  .wrap { max-width: 960px; margin: 0 auto; padding: 48px 20px; }
-  h1 { margin: 0 0 8px; } .sub { color: #666; margin: 0 0 32px; }
-  .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 20px; }
-  .card { background: #fff; border-radius: 12px; padding: 24px; box-shadow: 0 1px 3px rgba(0,0,0,.08); display: flex; flex-direction: column; }
-  .card h3 { margin: 0 0 8px; } .card p { color: #666; flex: 1; margin: 0 0 20px; }
-  button { cursor: pointer; border: 0; border-radius: 8px; padding: 12px 18px; font-size: 15px; font-weight: 600; background: #111; color: #fff; }
+  body {
+    margin: 0; font-family: "Public Sans", system-ui, sans-serif; color: var(--ink); min-height: 100vh;
+    background: radial-gradient(1200px 600px at 10% -10%, #fff 0%, transparent 60%),
+                radial-gradient(900px 500px at 110% 10%, var(--purple-soft) 0%, transparent 60%),
+                linear-gradient(180deg, #F6F8F9 0%, var(--bg) 100%);
+  }
+  header { max-width: 1080px; margin: 0 auto; padding: 24px 20px; display: flex; align-items: center; }
+  header img { height: 40px; }
+  .wrap { max-width: 1080px; margin: 0 auto; padding: 24px 20px 64px; }
+
+  .welcome {
+    background: rgba(255,255,255,.75); backdrop-filter: blur(14px); border: 1px solid rgba(255,255,255,.9);
+    border-radius: 20px; padding: 36px; box-shadow: 0 10px 40px rgba(22,22,26,.06); margin-bottom: 32px;
+  }
+  .pill { display: inline-flex; align-items: center; gap: 6px; background: var(--green-soft); color: #008A63;
+    font-size: 13px; font-weight: 600; padding: 6px 12px; border-radius: 999px; margin-bottom: 16px; }
+  .pill::before { content: ""; width: 6px; height: 6px; border-radius: 50%; background: var(--green); }
+  .welcome h1 { margin: 0 0 10px; font-size: clamp(26px, 4vw, 36px); font-weight: 700; letter-spacing: -.02em; }
+  .welcome h1 span { color: var(--purple); }
+  .welcome p { margin: 0; color: var(--muted); font-size: 17px; line-height: 1.6; max-width: 620px; }
+
+  .section-title { font-size: 15px; font-weight: 600; color: var(--muted); margin: 0 0 16px; }
+  .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 16px; }
+  .card {
+    background: #fff; border: 1px solid var(--line); border-radius: 16px; padding: 20px;
+    display: flex; flex-direction: column; gap: 16px; transition: transform .15s, box-shadow .15s;
+  }
+  .card:hover { transform: translateY(-2px); box-shadow: 0 10px 30px rgba(22,22,26,.08); }
+  .file { display: flex; align-items: center; gap: 14px; }
+  .icon { width: 44px; height: 52px; border-radius: 8px; background: #FAFAFB; border: 1px solid var(--line);
+    position: relative; flex: none; }
+  .icon::after { content: "PDF"; position: absolute; left: -6px; bottom: 8px; background: #D93025; color: #fff;
+    font-size: 10px; font-weight: 700; padding: 2px 5px; border-radius: 4px; }
+  .file h3 { margin: 0 0 2px; font-size: 17px; font-weight: 600; }
+  .file small { color: var(--muted); font-size: 14px; }
+  .card p { margin: 0; color: var(--muted); line-height: 1.5; flex: 1; }
+
+  button { font-family: inherit; cursor: pointer; border: 0; border-radius: 10px; padding: 12px 18px;
+    font-size: 15px; font-weight: 600; background: var(--ink); color: #fff; display: inline-flex;
+    align-items: center; justify-content: center; gap: 8px; transition: background .15s; }
+  button:hover { background: var(--purple); }
   button:disabled { opacity: .5; cursor: not-allowed; }
-  .link { background: none; color: #111; text-decoration: underline; padding: 8px 0; font-weight: 500; }
-  .overlay { position: fixed; inset: 0; background: rgba(0,0,0,.5); display: none; align-items: center; justify-content: center; padding: 20px; }
+  .card button { background: #fff; color: var(--ink); border: 1px solid var(--line); }
+  .card button:hover { background: var(--ink); color: #fff; border-color: var(--ink); }
+  .link { background: none !important; color: var(--muted); padding: 6px 4px; font-weight: 500; font-size: 14px; }
+  .link:hover { color: var(--purple); }
+
+  .overlay { position: fixed; inset: 0; background: rgba(22,22,26,.35); backdrop-filter: blur(4px);
+    display: none; align-items: center; justify-content: center; padding: 20px; }
   .overlay.open { display: flex; }
-  .modal { background: #fff; border-radius: 14px; padding: 28px; width: 100%; max-width: 400px; position: relative; }
-  .close { position: absolute; top: 10px; right: 14px; background: none; color: #888; font-size: 22px; padding: 4px; }
-  input { width: 100%; padding: 12px; font-size: 16px; border: 1px solid #ccc; border-radius: 8px; margin: 12px 0; }
-  .otp { text-align: center; font-size: 26px; letter-spacing: 10px; }
-  .msg { font-size: 14px; min-height: 20px; } .err { color: #c0392b; } .ok { color: #1e8449; }
-  .full { width: 100%; } .hidden { display: none; }
+  .modal { background: rgba(255,255,255,.95); border: 1px solid #fff; border-radius: 20px; padding: 32px;
+    width: 100%; max-width: 420px; position: relative; box-shadow: 0 30px 80px rgba(22,22,26,.18); }
+  .modal h2 { margin: 0 0 6px; font-size: 22px; font-weight: 700; }
+  .modal .sub { margin: 0; color: var(--muted); font-size: 15px; }
+  .close { position: absolute; top: 14px; right: 14px; background: none !important; color: var(--muted);
+    font-size: 22px; padding: 6px 10px; }
+  .close:hover { color: var(--ink); }
+  input { width: 100%; padding: 13px 14px; font: inherit; font-size: 16px; border: 1px solid var(--line);
+    border-radius: 10px; margin: 18px 0 14px; background: #fff; outline: none; }
+  input:focus { border-color: var(--purple); box-shadow: 0 0 0 3px var(--purple-soft); }
+  .otp { text-align: center; font-size: 28px; letter-spacing: 12px; font-weight: 600; }
+  .row { display: flex; justify-content: space-between; margin-top: 8px; }
+  .msg { font-size: 14px; min-height: 20px; margin: 12px 0 0; } .err { color: #C0392B; } .ok { color: #008A63; }
+  .full { width: 100%; } .hidden { display: none !important; }
+  footer { text-align: center; color: var(--muted); font-size: 13px; padding: 0 20px 32px; }
 </style>
 </head>
 <body>
+<header><img src="logo.png" alt="Fusionedge" /></header>
+
 <div class="wrap">
-  <h1>Our Brochures</h1>
-  <p class="sub">Verify your email once to download any brochure.</p>
+  <section class="welcome">
+    <div class="pill">Resources</div>
+    <h1>Welcome to <span>Fusionedge</span> 👋</h1>
+    <p>Thanks for stopping by. Explore our brochures to learn more about what we do. Verify your email once and you can download any of them.</p>
+  </section>
+
+  <h2 class="section-title">Available brochures</h2>
   <div class="grid">
-    <div class="card"><h3>Product Catalog</h3><p>Our full range of products and specifications.</p><button data-id="product-catalog">Download</button></div>
-    <div class="card"><h3>Pricing Guide</h3><p>Plans, packages and pricing details.</p><button data-id="pricing-guide">Download</button></div>
-    <div class="card"><h3>Company Profile</h3><p>Who we are, what we do and our clients.</p><button data-id="company-profile">Download</button></div>
+    <div class="card">
+      <div class="file"><div class="icon"></div><div><h3>Product Catalog</h3><small>PDF brochure</small></div></div>
+      <p>Our full range of products and specifications.</p>
+      <button data-id="product-catalog">Download ↓</button>
+    </div>
+    <div class="card">
+      <div class="file"><div class="icon"></div><div><h3>Pricing Guide</h3><small>PDF brochure</small></div></div>
+      <p>Plans, packages and pricing details.</p>
+      <button data-id="pricing-guide">Download ↓</button>
+    </div>
+    <div class="card">
+      <div class="file"><div class="icon"></div><div><h3>Company Profile</h3><small>PDF brochure</small></div></div>
+      <p>Who we are, what we do and our clients.</p>
+      <button data-id="company-profile">Download ↓</button>
+    </div>
   </div>
 </div>
+
+<footer>© Fusionedge. We only use your email to verify your download.</footer>
 
 <div class="overlay" id="overlay">
   <div class="modal">
     <button class="close" id="closeBtn" aria-label="Close">&times;</button>
     <div id="stepEmail">
       <h2>Verify your email</h2>
-      <p class="sub" style="margin:0">We'll send a 6-digit code to your inbox.</p>
+      <p class="sub">We'll send a 6-digit code to your inbox.</p>
       <input type="email" id="email" placeholder="you@company.com" autocomplete="email" />
-      <button class="full" id="sendBtn">Send code</button>
+      <button class="full" id="sendBtn">Send code ➜</button>
     </div>
     <div id="stepOtp" class="hidden">
-      <h2>Enter code</h2>
-      <p class="sub" style="margin:0">Sent to <b id="sentTo"></b></p>
-      <input id="code" class="otp" inputmode="numeric" maxlength="6" placeholder="••••••" autocomplete="one-time-code" />
+      <h2>Enter your code</h2>
+      <p class="sub">Sent to <b id="sentTo"></b></p>
+      <input id="code" class="otp" inputmode="numeric" maxlength="6" placeholder="······" autocomplete="one-time-code" />
       <button class="full" id="verifyBtn">Verify &amp; download</button>
-      <button class="link" id="resendBtn">Resend code</button>
-      <button class="link" id="changeBtn">Change email</button>
+      <div class="row">
+        <button class="link" id="changeBtn">← Change email</button>
+        <button class="link" id="resendBtn">Resend code</button>
+      </div>
     </div>
     <p class="msg" id="msg"></p>
   </div>
@@ -63,6 +141,7 @@
 
   const getToken = () => { try { return localStorage.getItem("dl_token"); } catch { return null; } };
   const setToken = (t) => { try { localStorage.setItem("dl_token", t); } catch {} };
+  const clearToken = () => { try { localStorage.removeItem("dl_token"); } catch {} };
 
   function msg(text, ok) { $("msg").textContent = text; $("msg").className = "msg " + (ok ? "ok" : "err"); }
   function step(which) {
@@ -77,7 +156,7 @@
     if (!token) { pendingId = id; return openModal(); }
     const url = `${API}/api/download/${id}?token=${token}`;
     const head = await fetch(url, { method: "HEAD" });
-    if (head.status === 401) { localStorage.removeItem("dl_token"); pendingId = id; return openModal(); }
+    if (head.status === 401) { clearToken(); pendingId = id; return openModal(); }
     window.location.href = url;
   }
 
@@ -118,6 +197,7 @@
   $("verifyBtn").onclick = verify;
   $("changeBtn").onclick = () => { step("email"); msg(""); };
   $("closeBtn").onclick = closeModal;
+  $("overlay").onclick = (e) => { if (e.target.id === "overlay") closeModal(); };
   $("email").onkeydown = (e) => e.key === "Enter" && sendCode();
   $("code").oninput = (e) => { e.target.value = e.target.value.replace(/\D/g, ""); if (e.target.value.length === 6) verify(); };
 </script>

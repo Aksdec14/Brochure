@@ -23,6 +23,41 @@ const sessions = new Map(); // token -> { email, expires }
 const hash = (s) => crypto.createHash("sha256").update(s).digest("hex");
 const validEmail = (e) => /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(e);
 
+// Logo is embedded in the email itself (inline attachment), so it shows without any public URL
+const LOGO = require("fs").readFileSync(path.join(__dirname, "public", "logo.png")).toString("base64");
+function emailTemplate(code) {
+  const digits = code.split("").map((d) =>
+    `<td style="padding:0 4px"><div style="width:44px;height:54px;line-height:54px;text-align:center;font-size:26px;font-weight:700;color:#16161A;background:#ffffff;border:1px solid #E6E6EA;border-radius:10px">${d}</div></td>`
+  ).join("");
+  return `<!DOCTYPE html><html><head><meta charset="UTF-8">
+<link href="https://fonts.googleapis.com/css2?family=Public+Sans:wght@400;600;700&display=swap" rel="stylesheet"></head>
+<body style="margin:0;padding:0;background:#EEF1F3;font-family:'Public Sans',Helvetica,Arial,sans-serif;color:#16161A">
+<table width="100%" cellpadding="0" cellspacing="0" style="background:#EEF1F3;padding:40px 16px"><tr><td align="center">
+  <table width="100%" cellpadding="0" cellspacing="0" style="max-width:520px;background:#F7F7F8;border:1px solid #ffffff;border-radius:20px;box-shadow:0 10px 40px rgba(22,22,26,.08)">
+    <tr><td style="padding:32px 36px 8px">
+      <img src="cid:fusionedge-logo" alt="Fusionedge" width="126" height="40" style="display:block;width:126px;height:40px">
+    </td></tr>
+    <tr><td style="padding:24px 36px 0">
+      <h1 style="margin:0 0 16px;font-size:24px;font-weight:700;letter-spacing:-.01em">Verify your email</h1>
+      <p style="margin:0 0 12px;font-size:16px;line-height:1.6;color:#3A3A44">Hey there,</p>
+      <p style="margin:0;font-size:16px;line-height:1.6;color:#3A3A44">Thanks for your interest in <span style="color:#5D1F72;font-weight:600">Fusionedge</span>. Enter the code below to unlock your brochure downloads.</p>
+    </td></tr>
+    <tr><td align="center" style="padding:28px 36px">
+      <table cellpadding="0" cellspacing="0"><tr>${digits}</tr></table>
+      <p style="margin:14px 0 0;font-size:14px;color:#6B6B76">This code expires in <b style="color:#16161A;background:#FFF3D6;padding:1px 4px;border-radius:4px">10 minutes</b></p>
+    </td></tr>
+    <tr><td style="padding:0 36px 28px">
+      <table width="100%" cellpadding="0" cellspacing="0" style="background:#ffffff;border:1px solid #E6E6EA;border-radius:12px"><tr>
+        <td style="padding:14px 16px;font-size:14px;color:#6B6B76;line-height:1.5">
+          🔒 Didn't request this? You can safely ignore this email. Someone may have typed your address by mistake.
+        </td></tr></table>
+    </td></tr>
+    <tr><td style="padding:0 36px 32px;font-size:16px;line-height:1.6;color:#3A3A44">Best,<br>Team Fusionedge</td></tr>
+  </table>
+  <p style="margin:20px 0 0;font-size:12px;color:#8A8A94">© Fusionedge · Sent because a brochure download was requested with this email.</p>
+</td></tr></table></body></html>`;
+}
+
 app.post("/api/send-otp", async (req, res) => {
   const email = String(req.body.email || "").trim().toLowerCase();
   if (!validEmail(email)) return res.status(400).json({ error: "Enter a valid email." });
@@ -37,12 +72,9 @@ app.post("/api/send-otp", async (req, res) => {
   const { error } = await resend.emails.send({
     from: process.env.FROM_EMAIL,
     to: email,
-    subject: `Your verification code: ${code}`,
-    html: `<div style="font-family:sans-serif;max-width:420px">
-      <h2>Verify your email</h2>
-      <p>Use this code to download our brochures:</p>
-      <p style="font-size:32px;letter-spacing:8px;font-weight:bold">${code}</p>
-      <p style="color:#666">It expires in 10 minutes. If you didn't request this, ignore this email.</p></div>`,
+    subject: `${code} is your Fusionedge verification code`,
+    html: emailTemplate(code),
+    attachments: [{ filename: "logo.png", content: LOGO, contentId: "fusionedge-logo" }],
   });
   if (error) { console.error(error); return res.status(500).json({ error: "Could not send email." }); }
   res.json({ ok: true });
