@@ -5,159 +5,147 @@
 <title>Fusionedge · Brochures</title>
 <link rel="preconnect" href="https://fonts.googleapis.com" />
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-<link href="https://fonts.googleapis.com/css2?family=Public+Sans:wght@400;500;600;700&display=swap" rel="stylesheet" />
+<link href="https://fonts.googleapis.com/css2?family=Public+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
 <style>
-  :root {
-    --purple: #5D1F72; --purple-soft: #F3ECF6; --green: #00BF88; --green-soft: #E6F8F2;
-    --ink: #16161A; --muted: #6B6B76; --line: #E6E6EA; --bg: #EEF1F3;
-  }
+  :root { --purple: #5C1E70; --purple-dark: #3D1250; --ink: #17171C; --muted: #6B6B76; --line: #DCDCE2; }
   * { box-sizing: border-box; }
-  body {
-    margin: 0; font-family: "Public Sans", system-ui, sans-serif; color: var(--ink); min-height: 100vh;
-    background: radial-gradient(1200px 600px at 10% -10%, #fff 0%, transparent 60%),
-                radial-gradient(900px 500px at 110% 10%, var(--purple-soft) 0%, transparent 60%),
-                linear-gradient(180deg, #F6F8F9 0%, var(--bg) 100%);
-  }
-  header { max-width: 1080px; margin: 0 auto; padding: 24px 20px; display: flex; align-items: center; }
-  header img { height: 40px; }
-  .wrap { max-width: 1080px; margin: 0 auto; padding: 24px 20px 64px; }
+  body { margin: 0; font-family: "Public Sans", system-ui, sans-serif; color: var(--ink); background: #fff;
+    min-height: 100vh; min-height: 100dvh; display: flex; flex-direction: column; align-items: center;
+    text-align: center; padding: 0 20px; }
+  .logo { margin-top: clamp(32px, 8vh, 80px); }
+  .logo img { height: clamp(48px, 7vw, 64px); width: auto; display: block; }
+  main { flex: 1; width: 100%; max-width: 760px; display: flex; flex-direction: column; justify-content: center; padding: 32px 0; }
+  .view { animation: fade .35s ease; }
+  @keyframes fade { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: none; } }
+  h1 { margin: 0; font-size: clamp(32px, 6vw, 56px); font-weight: 700; font-style: italic; letter-spacing: -.02em; line-height: 1.15; }
+  h1 .u { display: inline-block; position: relative; padding-bottom: 4px; }
+  h1 .u::after { content: ""; position: absolute; left: 0; right: 0; bottom: -6px; height: 6px; background: #00BF88; }
+  .lead { margin: 22px 0 36px; font-size: clamp(16px, 2.2vw, 19px); color: var(--muted); line-height: 1.5; }
+  .lead b { color: var(--ink); font-weight: 600; }
 
-  .welcome {
-    background: rgba(255,255,255,.75); backdrop-filter: blur(14px); border: 1px solid rgba(255,255,255,.9);
-    border-radius: 20px; padding: 36px; box-shadow: 0 10px 40px rgba(22,22,26,.06); margin-bottom: 32px;
-  }
-  .pill { display: inline-flex; align-items: center; gap: 6px; background: var(--green-soft); color: #008A63;
-    font-size: 13px; font-weight: 600; padding: 6px 12px; border-radius: 999px; margin-bottom: 16px; }
-  .pill::before { content: ""; width: 6px; height: 6px; border-radius: 50%; background: var(--green); }
-  .welcome h1 { margin: 0 0 10px; font-size: clamp(26px, 4vw, 36px); font-weight: 700; letter-spacing: -.02em; }
-  .welcome h1 span { color: var(--purple); }
-  .welcome p { margin: 0; color: var(--muted); font-size: 17px; line-height: 1.6; max-width: 620px; }
-
-  .section-title { font-size: 15px; font-weight: 600; color: var(--muted); margin: 0 0 16px; }
-  .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 16px; }
-  .card {
-    background: #fff; border: 1px solid var(--line); border-radius: 16px; padding: 20px;
-    display: flex; flex-direction: column; gap: 16px; transition: transform .15s, box-shadow .15s;
-  }
-  .card:hover { transform: translateY(-2px); box-shadow: 0 10px 30px rgba(22,22,26,.08); }
-  .file { display: flex; align-items: center; gap: 14px; }
-  .icon { width: 44px; height: 52px; border-radius: 8px; background: #FAFAFB; border: 1px solid var(--line);
-    position: relative; flex: none; }
-  .icon::after { content: "PDF"; position: absolute; left: -6px; bottom: 8px; background: #D93025; color: #fff;
-    font-size: 10px; font-weight: 700; padding: 2px 5px; border-radius: 4px; }
-  .file h3 { margin: 0 0 2px; font-size: 17px; font-weight: 600; }
-  .file small { color: var(--muted); font-size: 14px; }
-  .card p { margin: 0; color: var(--muted); line-height: 1.5; flex: 1; }
-
-  button { font-family: inherit; cursor: pointer; border: 0; border-radius: 10px; padding: 12px 18px;
-    font-size: 15px; font-weight: 600; background: var(--ink); color: #fff; display: inline-flex;
-    align-items: center; justify-content: center; gap: 8px; transition: background .15s; }
-  button:hover { background: var(--purple); }
+  form { display: flex; gap: 10px; max-width: 420px; margin: 0 auto; }
+  input { flex: 1; min-width: 0; height: 52px; padding: 0 22px; font: inherit; font-size: 16px; color: var(--ink);
+    border: 1px solid var(--line); border-radius: 999px; outline: none; background: #fff; }
+  input::placeholder { font-style: italic; color: #9A9AA4; }
+  input:focus { border-color: var(--purple); }
+  input.otp { text-align: center; letter-spacing: 10px; font-size: 22px; font-weight: 700; }
+  input.otp::placeholder { letter-spacing: 6px; font-style: normal; }
+  button { font-family: inherit; cursor: pointer; border: 0; background: var(--purple); color: #fff; font-weight: 600;
+    transition: background .15s; }
+  button:hover { background: var(--purple-dark); }
   button:disabled { opacity: .5; cursor: not-allowed; }
-  .card button { background: #fff; color: var(--ink); border: 1px solid var(--line); }
-  .card button:hover { background: var(--ink); color: #fff; border-color: var(--ink); }
-  .link { background: none !important; color: var(--muted); padding: 6px 4px; font-weight: 500; font-size: 14px; }
-  .link:hover { color: var(--purple); }
+  .go { height: 52px; padding: 0 28px; border-radius: 999px; flex: none; font-size: 16px; }
+  .links { margin-top: 14px; display: flex; justify-content: center; gap: 18px; }
+  .link { background: none !important; color: var(--muted); font-size: 14px; font-weight: 500; padding: 4px; }
+  .link:hover { color: var(--ink); }
+  .msg { min-height: 20px; margin: 14px 0 0; font-size: 14px; } .err { color: #C0392B; } .ok { color: #00936A; }
 
-  .overlay { position: fixed; inset: 0; background: rgba(22,22,26,.35); backdrop-filter: blur(4px);
-    display: none; align-items: center; justify-content: center; padding: 20px; }
-  .overlay.open { display: flex; }
-  .modal { background: rgba(255,255,255,.95); border: 1px solid #fff; border-radius: 20px; padding: 32px;
-    width: 100%; max-width: 420px; position: relative; box-shadow: 0 30px 80px rgba(22,22,26,.18); }
-  .modal h2 { margin: 0 0 6px; font-size: 22px; font-weight: 700; }
-  .modal .sub { margin: 0; color: var(--muted); font-size: 15px; }
-  .close { position: absolute; top: 14px; right: 14px; background: none !important; color: var(--muted);
-    font-size: 22px; padding: 6px 10px; }
-  .close:hover { color: var(--ink); }
-  input { width: 100%; padding: 13px 14px; font: inherit; font-size: 16px; border: 1px solid var(--line);
-    border-radius: 10px; margin: 18px 0 14px; background: #fff; outline: none; }
-  input:focus { border-color: var(--purple); box-shadow: 0 0 0 3px var(--purple-soft); }
-  .otp { text-align: center; font-size: 28px; letter-spacing: 12px; font-weight: 600; }
-  .row { display: flex; justify-content: space-between; margin-top: 8px; }
-  .msg { font-size: 14px; min-height: 20px; margin: 12px 0 0; } .err { color: #C0392B; } .ok { color: #008A63; }
-  .full { width: 100%; } .hidden { display: none !important; }
-  footer { text-align: center; color: var(--muted); font-size: 13px; padding: 0 20px 32px; }
+  .list { display: flex; flex-direction: column; gap: 12px; max-width: 520px; margin: 0 auto; text-align: left; }
+  .item { display: flex; align-items: center; gap: 16px; padding: 16px 16px 16px 22px; border: 1px solid var(--line);
+    border-radius: 18px; }
+  .item div { flex: 1; min-width: 0; }
+  .item h3 { margin: 0 0 2px; font-size: 17px; font-weight: 700; }
+  .item p { margin: 0; color: var(--muted); font-size: 14px; }
+  .dl { border-radius: 999px; padding: 11px 20px; font-size: 14px; flex: none; }
+
+  footer { align-self: stretch; margin: 0 -20px; background: #3D1250; color: #fff; font-size: 15px;
+    display: flex; align-items: center; justify-content: space-between; gap: 16px; padding: 20px clamp(20px, 5vw, 96px); }
+  .social { display: flex; gap: 12px; }
+  .social a { width: 44px; height: 44px; border-radius: 50%; background: #fff; color: #3D1250; display: grid; place-items: center;
+    transition: transform .15s; }
+  .social a:hover { transform: translateY(-2px); }
+  .social svg { width: 18px; height: 18px; }
+  .hidden { display: none !important; }
+
+  @media (max-width: 560px) {
+    body { text-align: left; align-items: stretch; }
+    .logo { margin-top: 24px; align-self: flex-start; }
+    .logo img { height: 48px; }
+    main { justify-content: flex-start; padding: 48px 0 24px; }
+    h1 { font-size: 34px; }
+    .lead { margin: 18px 0 28px; font-size: 16px; }
+    .lead br { display: none; }
+    form { flex-direction: column; max-width: none; margin: 0; gap: 12px; }
+    input { width: 100%; flex: none; }
+    .go { width: 100%; }
+    .links { justify-content: space-between; }
+    .list { margin: 0; }
+    .item { flex-direction: column; align-items: stretch; gap: 12px; padding: 16px; }
+    .dl { width: 100%; }
+    footer { padding: 16px 20px; font-size: 14px; }
+    .social a { width: 40px; height: 40px; }
+  }
 </style>
 </head>
 <body>
-<header><img src="logo.png" alt="Fusionedge" /></header>
+<div class="logo"><img src="data:image/png;base64,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" alt="Fusionedge" /></div>
 
-<div class="wrap">
-  <section class="welcome">
-    <div class="pill">Resources</div>
-    <h1>Welcome to <span>Fusionedge</span> 👋</h1>
-    <p>Thanks for stopping by. Explore our brochures to learn more about what we do. Verify your email once and you can download any of them.</p>
+<main>
+  <!-- Step 1: email -->
+  <section class="view" id="stepEmail">
+    <h1>Download our <span class="u">brochures</span></h1>
+    <p class="lead">Enter your email to get a quick verification code,<br />then download any brochure you like.</p>
+    <form id="emailForm">
+      <input type="email" id="email" placeholder="Enter your email..." autocomplete="email" required />
+      <button class="go" id="sendBtn">Submit</button>
+    </form>
   </section>
 
-  <h2 class="section-title">Available brochures</h2>
-  <div class="grid">
-    <div class="card">
-      <div class="file"><div class="icon"></div><div><h3>Product Catalog</h3><small>PDF brochure</small></div></div>
-      <p>Our full range of products and specifications.</p>
-      <button data-id="product-catalog">Download ↓</button>
-    </div>
-    <div class="card">
-      <div class="file"><div class="icon"></div><div><h3>Pricing Guide</h3><small>PDF brochure</small></div></div>
-      <p>Plans, packages and pricing details.</p>
-      <button data-id="pricing-guide">Download ↓</button>
-    </div>
-    <div class="card">
-      <div class="file"><div class="icon"></div><div><h3>Company Profile</h3><small>PDF brochure</small></div></div>
-      <p>Who we are, what we do and our clients.</p>
-      <button data-id="company-profile">Download ↓</button>
-    </div>
-  </div>
-</div>
-
-<footer>© Fusionedge. We only use your email to verify your download.</footer>
-
-<div class="overlay" id="overlay">
-  <div class="modal">
-    <button class="close" id="closeBtn" aria-label="Close">&times;</button>
-    <div id="stepEmail">
-      <h2>Verify your email</h2>
-      <p class="sub">We'll send a 6-digit code to your inbox.</p>
-      <input type="email" id="email" placeholder="you@company.com" autocomplete="email" />
-      <button class="full" id="sendBtn">Send code ➜</button>
-    </div>
-    <div id="stepOtp" class="hidden">
-      <h2>Enter your code</h2>
-      <p class="sub">Sent to <b id="sentTo"></b></p>
+  <!-- Step 2: code -->
+  <section class="view hidden" id="stepOtp">
+    <h1>Check your <span class="u">inbox</span></h1>
+    <p class="lead">We sent a 6-digit code to <b id="sentTo"></b></p>
+    <form id="otpForm">
       <input id="code" class="otp" inputmode="numeric" maxlength="6" placeholder="······" autocomplete="one-time-code" />
-      <button class="full" id="verifyBtn">Verify &amp; download</button>
-      <div class="row">
-        <button class="link" id="changeBtn">← Change email</button>
-        <button class="link" id="resendBtn">Resend code</button>
-      </div>
+      <button class="go" id="verifyBtn">Submit</button>
+    </form>
+    <div class="links">
+      <button class="link" id="changeBtn" type="button">← Change email</button>
+      <button class="link" id="resendBtn" type="button">Resend code</button>
     </div>
-    <p class="msg" id="msg"></p>
+  </section>
+
+  <!-- Step 3: brochures -->
+  <section class="view hidden" id="stepList">
+    <h1>Your <span class="u">brochures</span></h1>
+    <p class="lead">You're verified. Download whatever you need.</p>
+    <div class="list">
+      <div class="item"><div><h3>Product Catalog</h3><p>Our full range of products and specifications.</p></div><button class="dl" data-id="product-catalog">Download ↓</button></div>
+      <div class="item"><div><h3>Pricing Guide</h3><p>Plans, packages and pricing details.</p></div><button class="dl" data-id="pricing-guide">Download ↓</button></div>
+      <div class="item"><div><h3>Company Profile</h3><p>Who we are, what we do and our clients.</p></div><button class="dl" data-id="company-profile">Download ↓</button></div>
+    </div>
+  </section>
+
+  <p class="msg" id="msg"></p>
+</main>
+
+<footer>
+  <span>© 2026 Fusionedge</span>
+  <div class="social">
+    <a href="https://www.instagram.com/" target="_blank" rel="noopener" aria-label="Instagram">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="5"/><circle cx="12" cy="12" r="4"/><circle cx="17.5" cy="6.5" r="1" fill="currentColor" stroke="none"/></svg>
+    </a>
+    <a href="https://www.linkedin.com/" target="_blank" rel="noopener" aria-label="LinkedIn">
+      <svg viewBox="0 0 24 24" fill="currentColor"><path d="M4.98 3.5a2.5 2.5 0 1 1 0 5 2.5 2.5 0 0 1 0-5zM3 9.5h4V21H3zM9.5 9.5h3.8v1.6h.1c.5-1 1.8-1.9 3.7-1.9 4 0 4.7 2.6 4.7 6V21h-4v-5.1c0-1.2 0-2.8-1.7-2.8s-2 1.3-2 2.7V21h-4z"/></svg>
+    </a>
   </div>
-</div>
+</footer>
 
 <script>
   const API = ""; // same origin; set to "https://your-server.com" if hosted separately
   const $ = (id) => document.getElementById(id);
-  let pendingId = null, email = "";
+  let email = "";
 
   const getToken = () => { try { return localStorage.getItem("dl_token"); } catch { return null; } };
   const setToken = (t) => { try { localStorage.setItem("dl_token", t); } catch {} };
   const clearToken = () => { try { localStorage.removeItem("dl_token"); } catch {} };
 
-  function msg(text, ok) { $("msg").textContent = text; $("msg").className = "msg " + (ok ? "ok" : "err"); }
-  function step(which) {
-    $("stepEmail").classList.toggle("hidden", which !== "email");
-    $("stepOtp").classList.toggle("hidden", which !== "otp");
-  }
-  function openModal() { $("overlay").classList.add("open"); step("email"); msg(""); $("email").focus(); }
-  function closeModal() { $("overlay").classList.remove("open"); }
-
-  async function download(id) {
-    const token = getToken();
-    if (!token) { pendingId = id; return openModal(); }
-    const url = `${API}/api/download/${id}?token=${token}`;
-    const head = await fetch(url, { method: "HEAD" });
-    if (head.status === 401) { clearToken(); pendingId = id; return openModal(); }
-    window.location.href = url;
+  function msg(text, ok) { $("msg").textContent = text || ""; $("msg").className = "msg " + (ok ? "ok" : "err"); }
+  function show(step) {
+    ["stepEmail", "stepOtp", "stepList"].forEach((id) => $(id).classList.toggle("hidden", id !== step));
+    msg("");
+    if (step === "stepEmail") $("email").focus();
+    if (step === "stepOtp") { $("code").value = ""; $("code").focus(); }
   }
 
   async function post(path, body) {
@@ -167,39 +155,45 @@
     return data;
   }
 
-  async function sendCode() {
+  async function sendCode(e) {
+    if (e) e.preventDefault();
     email = $("email").value.trim();
     if (!/^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(email)) return msg("Enter a valid email.");
     $("sendBtn").disabled = $("resendBtn").disabled = true; msg("Sending…", true);
     try {
       await post("/api/send-otp", { email });
-      $("sentTo").textContent = email; step("otp"); msg("Code sent! Check your inbox (and spam).", true);
-      $("code").value = ""; $("code").focus();
-    } catch (e) { msg(e.message); }
+      $("sentTo").textContent = email; show("stepOtp"); msg("Code sent! Check your inbox (and spam).", true);
+    } catch (err) { msg(err.message); }
     finally { $("sendBtn").disabled = $("resendBtn").disabled = false; }
   }
 
-  async function verify() {
+  async function verify(e) {
+    if (e) e.preventDefault();
     const code = $("code").value.trim();
     if (!/^\d{6}$/.test(code)) return msg("Enter the 6-digit code.");
     $("verifyBtn").disabled = true;
     try {
       const { token } = await post("/api/verify-otp", { email, code });
-      setToken(token); msg("Verified! Starting download…", true);
-      setTimeout(() => { closeModal(); if (pendingId) download(pendingId); }, 700);
-    } catch (e) { msg(e.message); }
+      setToken(token); show("stepList");
+    } catch (err) { msg(err.message); }
     finally { $("verifyBtn").disabled = false; }
   }
 
-  document.querySelectorAll("[data-id]").forEach((b) => b.onclick = () => download(b.dataset.id));
-  $("sendBtn").onclick = sendCode;
-  $("resendBtn").onclick = sendCode;
-  $("verifyBtn").onclick = verify;
-  $("changeBtn").onclick = () => { step("email"); msg(""); };
-  $("closeBtn").onclick = closeModal;
-  $("overlay").onclick = (e) => { if (e.target.id === "overlay") closeModal(); };
-  $("email").onkeydown = (e) => e.key === "Enter" && sendCode();
+  async function download(id) {
+    const url = `${API}/api/download/${id}?token=${getToken()}`;
+    const head = await fetch(url, { method: "HEAD" }).catch(() => null);
+    if (!head || head.status === 401) { clearToken(); show("stepEmail"); return msg("Please verify your email again."); }
+    window.location.href = url;
+  }
+
+  $("emailForm").onsubmit = sendCode;
+  $("otpForm").onsubmit = verify;
+  $("resendBtn").onclick = () => sendCode();
+  $("changeBtn").onclick = () => show("stepEmail");
   $("code").oninput = (e) => { e.target.value = e.target.value.replace(/\D/g, ""); if (e.target.value.length === 6) verify(); };
+  document.querySelectorAll("[data-id]").forEach((b) => b.onclick = () => download(b.dataset.id));
+
+  if (getToken()) show("stepList"); // already verified on this device
 </script>
 </body>
 </html>
