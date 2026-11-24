@@ -17,7 +17,9 @@ const resend = new Resend(process.env.RESEND_API_KEY);
 app.set("trust proxy", 1);
 app.use(express.json());
 app.use(express.urlencoded({ extended: false }));
-app.use(express.static(path.join(__dirname, "public"))); // index.html goes in /public
+// On Vercel the app is bundled and the project directory is read-only. Included files live at cwd.
+const ROOT = process.env.VERCEL ? process.cwd() : __dirname;
+app.use(express.static(path.join(ROOT, "public"))); // index.html goes in /public
 
 // Brochure files live in /brochures (NOT public) so they can't be downloaded without verifying
 const BROCHURES = {
@@ -27,15 +29,10 @@ const BROCHURES = {
   },
 };
 
-const otps = new Map();     // email -> { hash, expires, attempts, lastSent }
-const sessions = new Map(); // token -> { email, expires }
 const hash = (s) => crypto.createHash("sha256").update(s).digest("hex");
 const validEmail = (e) => /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(e);
 
-const PUBLIC_DIR = path.join(__dirname, "public");
-const DOWNLOAD_LOG = process.env.DOWNLOAD_LOG_PATH
-  ? path.resolve(process.env.DOWNLOAD_LOG_PATH)
-  : path.join(__dirname, "data", "downloads.jsonl");
+const PUBLIC_DIR = path.join(ROOT, "public");
 
 function isInside(parent, child) {
   const from = process.platform === "win32" ? parent.toLowerCase() : parent;
@@ -43,18 +40,45 @@ function isInside(parent, child) {
   const rel = path.relative(from, to);
   return rel === "" || (!rel.startsWith("..") && !path.isAbsolute(rel));
 }
-if (isInside(PUBLIC_DIR, DOWNLOAD_LOG)) {
-  throw new Error("DOWNLOAD_LOG_PATH must not be inside public/");
+
+function openDownloadLog() {
+  const tmp = path.join("/tmp", "brochure-downloads.jsonl");
+  const candidates = [];
+  if (process.env.DOWNLOAD_LOG_PATH) candidates.push(path.resolve(process.env.DOWNLOAD_LOG_PATH));
+  else if (process.env.VERCEL) candidates.push(tmp);
+  else candidates.push(path.join(ROOT, "data", "downloads.jsonl"));
+  if (process.env.VERCEL && !candidates.includes(tmp)) candidates.push(tmp);
+
+  let lastErr;
+  for (const file of candidates) {
+    try {
+      if (isInside(PUBLIC_DIR, file)) throw new Error("DOWNLOAD_LOG_PATH must not be inside public/");
+      fs.mkdirSync(path.dirname(file), { recursive: true });
+      const fd = fs.openSync(file, "a", 0o600);
+      try { fs.chmodSync(file, 0o600); } catch (err) {
+        console.error("Could not restrict download log permissions:", err.message);
+      }
+      return { file, fd };
+    } catch (err) {
+      lastErr = err;
+      console.error("Download log unavailable at", file, err.message);
+      if (!process.env.VERCEL) break;
+    }
+  }
+  if (!process.env.VERCEL) throw lastErr;
+  return { file: candidates[0], fd: null };
 }
 
-fs.mkdirSync(path.dirname(DOWNLOAD_LOG), { recursive: true });
-const logFd = fs.openSync(DOWNLOAD_LOG, "a", 0o600);
-try { fs.chmodSync(DOWNLOAD_LOG, 0o600); } catch (err) {
-  console.error("Could not restrict download log permissions:", err.message);
-}
+const openedLog = openDownloadLog();
+let DOWNLOAD_LOG = openedLog.file;
+let logFd = openedLog.fd;
 
 // One JSON object per line, written in a single append and then fsynced.
 function recordDownload(email, brochure) {
+  if (logFd == null) {
+    console.error("Download log is not writable; this download was not recorded.");
+    return;
+  }
   const line = JSON.stringify({ email, brochure, at: new Date().toISOString() }) + "\n";
   const buf = Buffer.from(line, "utf8");
   const written = fs.writeSync(logFd, buf);
@@ -83,6 +107,53 @@ function tokensMatch(provided, expected) {
   const a = crypto.createHash("sha256").update(provided).digest();
   const b = crypto.createHash("sha256").update(expected).digest();
   return crypto.timingSafeEqual(a, b);
+}
+
+// Signed values travel with the browser, so a code still works when Vercel uses another instance.
+function appSecret() {
+  const raw = process.env.APP_SECRET || process.env.RESEND_API_KEY || "";
+  if (!raw) return null;
+  return crypto.createHash("sha256").update("brochure-otp:" + raw).digest();
+}
+
+function signPayload(data) {
+  const secret = appSecret();
+  if (!secret) throw new Error("Missing signing secret");
+  const body = Buffer.from(JSON.stringify(data)).toString("base64url");
+  const sig = crypto.createHmac("sha256", secret).update(body).digest("base64url");
+  return `${body}.${sig}`;
+}
+
+function readPayload(token) {
+  const secret = appSecret();
+  if (!secret || typeof token !== "string") return null;
+  const dot = token.lastIndexOf(".");
+  if (dot <= 0) return null;
+  const body = token.slice(0, dot);
+  const sig = token.slice(dot + 1);
+  const expected = crypto.createHmac("sha256", secret).update(body).digest("base64url");
+  const a = Buffer.from(sig);
+  const b = Buffer.from(expected);
+  if (a.length !== b.length || !crypto.timingSafeEqual(a, b)) return null;
+  try {
+    const data = JSON.parse(Buffer.from(body, "base64url").toString());
+    if (!data || typeof data.exp !== "number" || Date.now() > data.exp) return null;
+    return data;
+  } catch {
+    return null;
+  }
+}
+
+function otpCookie(value, req, clear) {
+  const parts = [
+    `otp=${clear ? "" : value}`,
+    "HttpOnly",
+    "SameSite=Lax",
+    "Path=/api",
+    clear ? "Max-Age=0" : "Max-Age=600",
+  ];
+  if (req.secure) parts.push("Secure");
+  return parts.join("; ");
 }
 
 function adminToken() {
@@ -194,7 +265,7 @@ function sendHtml(res, html) {
 }
 
 // Logo is embedded in the email itself (inline attachment), so it shows without any public URL
-const LOGO = fs.readFileSync(path.join(__dirname, "public", "logo.png")).toString("base64");
+const LOGO = fs.readFileSync(path.join(PUBLIC_DIR, "logo.png")).toString("base64");
 function emailTemplate(code) {
   const digits = code.split("").map((d) =>
     `<td style="padding:0 4px"><div style="width:44px;height:54px;line-height:54px;text-align:center;font-size:26px;font-weight:700;color:#16161A;background:#ffffff;border:1px solid #E6E6EA;border-radius:10px">${d}</div></td>`
@@ -231,14 +302,13 @@ function emailTemplate(code) {
 app.post("/api/send-otp", async (req, res) => {
   const email = String(req.body.email || "").trim().toLowerCase();
   if (!validEmail(email)) return res.status(400).json({ error: "Enter a valid email." });
+  if (!appSecret()) return res.status(500).json({ error: "Server is not configured." });
 
-  const prev = otps.get(email);
-  if (prev && Date.now() - prev.lastSent < 60_000)
+  const prev = readPayload(parseCookies(req).otp);
+  if (prev && prev.kind === "otp" && prev.email === email && Date.now() - prev.lastSent < 60_000)
     return res.status(429).json({ error: "Please wait a minute before requesting another code." });
 
   const code = crypto.randomInt(100000, 1000000).toString();
-  otps.set(email, { hash: hash(code), expires: Date.now() + 10 * 60_000, attempts: 0, lastSent: Date.now() });
-
   const { error } = await resend.emails.send({
     from: process.env.FROM_EMAIL,
     to: email,
@@ -247,32 +317,45 @@ app.post("/api/send-otp", async (req, res) => {
     attachments: [{ filename: "logo.png", content: LOGO, contentId: "fusionedge-logo" }],
   });
   if (error) { console.error(error); return res.status(500).json({ error: "Could not send email." }); }
+
+  res.setHeader("Set-Cookie", otpCookie(signPayload({
+    kind: "otp",
+    email,
+    codeHash: hash(code),
+    exp: Date.now() + 10 * 60_000,
+    attempts: 0,
+    lastSent: Date.now(),
+  }), req));
   res.json({ ok: true });
 });
 
 app.post("/api/verify-otp", (req, res) => {
   const email = String(req.body.email || "").trim().toLowerCase();
   const code = String(req.body.code || "").trim();
-  const rec = otps.get(email);
-  if (!rec || Date.now() > rec.expires) return res.status(400).json({ error: "Code expired. Request a new one." });
-  if (rec.attempts >= 5) { otps.delete(email); return res.status(429).json({ error: "Too many attempts. Request a new code." }); }
-  rec.attempts++;
-  if (hash(code) !== rec.hash) return res.status(400).json({ error: "Incorrect code." });
+  const rec = readPayload(parseCookies(req).otp);
+  if (!rec || rec.kind !== "otp" || rec.email !== email) return res.status(400).json({ error: "Code expired. Request a new one." });
+  if (rec.attempts >= 5) {
+    res.setHeader("Set-Cookie", otpCookie("", req, true));
+    return res.status(429).json({ error: "Too many attempts. Request a new code." });
+  }
+  if (hash(code) !== rec.codeHash) {
+    rec.attempts += 1;
+    res.setHeader("Set-Cookie", otpCookie(signPayload(rec), req));
+    return res.status(400).json({ error: "Incorrect code." });
+  }
 
-  otps.delete(email);
-  const token = crypto.randomBytes(24).toString("hex");
-  sessions.set(token, { email, expires: Date.now() + 24 * 3600_000 });
-  console.log("Verified lead:", email); // save to your DB / CRM here
-  res.json({ ok: true, token });
+  console.log("Verified lead:", email);
+  res.setHeader("Set-Cookie", otpCookie("", req, true));
+  res.json({ ok: true, token: signPayload({ kind: "dl", email, exp: Date.now() + 24 * 3600_000 }) });
 });
 
 app.get("/api/download/:id", (req, res) => {
-  const s = sessions.get(req.query.token);
-  if (!s || Date.now() > s.expires) return res.status(401).send("Please verify your email first.");
+  const s = readPayload(String(req.query.token || ""));
+  if (!s || s.kind !== "dl" || typeof s.email !== "string") return res.status(401).send("Please verify your email first.");
   const brochure = req.params.id;
   const item = BROCHURES[brochure];
   if (!item) return res.status(404).send("Not found");
-  const full = path.join(__dirname, "brochures", item.file);
+  const full = path.join(ROOT, "brochures", item.file);
   if (!fs.existsSync(full)) return res.status(404).send("Not found");
 
   // The page sends HEAD to check the token, then GET to save the file. Only GET is a download.
@@ -351,15 +434,17 @@ app.get("/api/downloads", async (req, res) => {
 });
 
 function shutdown() {
-  try { fs.fsyncSync(logFd); } catch { /* already closed */ }
-  try { fs.closeSync(logFd); } catch { /* already closed */ }
+  if (logFd != null) {
+    try { fs.fsyncSync(logFd); } catch { /* already closed */ }
+    try { fs.closeSync(logFd); } catch { /* already closed */ }
+  }
   process.exit(0);
 }
-process.once("SIGTERM", shutdown);
-process.once("SIGINT", shutdown);
 
 const PORT = process.env.PORT || 3000; // Hostinger provides PORT
-if (require.main === module) {
+if (require.main === module && !process.env.VERCEL) {
+  process.once("SIGTERM", shutdown);
+  process.once("SIGINT", shutdown);
   if (!adminConfigured()) {
     console.warn("Set ADMIN_EMAIL and ADMIN_PASSWORD (8+ characters) in .env to open /admin.");
   }
@@ -368,3 +453,5 @@ if (require.main === module) {
     console.log(`Download log: ${DOWNLOAD_LOG}`);
   });
 }
+
+module.exports = app;
