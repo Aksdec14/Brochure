@@ -7,4 +7,5 @@
 .env.test.local.example
 .env.test.local.example
 .env.example
-node_modules  
+node_modules
+data/

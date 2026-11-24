@@ -1,21 +1,30 @@
 // npm install express resend dotenv
 // .env -> RESEND_API_KEY=re_xxx   FROM_EMAIL="Brochures <noreply@yourdomain.com>"
+// ADMIN_EMAIL and ADMIN_PASSWORD lock /admin.
+// Optional ADMIN_TOKEN (16+ characters) lets you read the same history over HTTP.
+// Optional DOWNLOAD_LOG_PATH keeps that history outside the app folder so a redeploy does not wipe it.
 require("dotenv").config();
 const express = require("express");
 const crypto = require("crypto");
+const fs = require("fs");
+const readline = require("readline");
 const path = require("path");
 const { Resend } = require("resend");
+const { loginPage, dashboardPage } = require("./admin-page");
 
 const app = express();
 const resend = new Resend(process.env.RESEND_API_KEY);
+app.set("trust proxy", 1);
 app.use(express.json());
+app.use(express.urlencoded({ extended: false }));
 app.use(express.static(path.join(__dirname, "public"))); // index.html goes in /public
 
 // Brochure files live in /brochures (NOT public) so they can't be downloaded without verifying
 const BROCHURES = {
-  "product-catalog": "product-catalog.pdf",
-  "pricing-guide": "pricing-guide.pdf",
-  "company-profile": "company-profile.pdf",
+  "fusionedge-brochure": {
+    file: "FusionEdge_Brochure_Page1_Liner_Removed.pdf",
+    downloadName: "FusionEdge Brochure.pdf",
+  },
 };
 
 const otps = new Map();     // email -> { hash, expires, attempts, lastSent }
@@ -23,8 +32,169 @@ const sessions = new Map(); // token -> { email, expires }
 const hash = (s) => crypto.createHash("sha256").update(s).digest("hex");
 const validEmail = (e) => /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(e);
 
+const PUBLIC_DIR = path.join(__dirname, "public");
+const DOWNLOAD_LOG = process.env.DOWNLOAD_LOG_PATH
+  ? path.resolve(process.env.DOWNLOAD_LOG_PATH)
+  : path.join(__dirname, "data", "downloads.jsonl");
+
+function isInside(parent, child) {
+  const from = process.platform === "win32" ? parent.toLowerCase() : parent;
+  const to = process.platform === "win32" ? child.toLowerCase() : child;
+  const rel = path.relative(from, to);
+  return rel === "" || (!rel.startsWith("..") && !path.isAbsolute(rel));
+}
+if (isInside(PUBLIC_DIR, DOWNLOAD_LOG)) {
+  throw new Error("DOWNLOAD_LOG_PATH must not be inside public/");
+}
+
+fs.mkdirSync(path.dirname(DOWNLOAD_LOG), { recursive: true });
+const logFd = fs.openSync(DOWNLOAD_LOG, "a", 0o600);
+try { fs.chmodSync(DOWNLOAD_LOG, 0o600); } catch (err) {
+  console.error("Could not restrict download log permissions:", err.message);
+}
+
+// One JSON object per line, written in a single append and then fsynced.
+function recordDownload(email, brochure) {
+  const line = JSON.stringify({ email, brochure, at: new Date().toISOString() }) + "\n";
+  const buf = Buffer.from(line, "utf8");
+  const written = fs.writeSync(logFd, buf);
+  if (written !== buf.length) throw new Error("Incomplete write to download log");
+  fs.fsyncSync(logFd);
+}
+
+function readDownloads() {
+  return new Promise((resolve, reject) => {
+    if (!fs.existsSync(DOWNLOAD_LOG)) return resolve([]);
+    const rows = [];
+    const rl = readline.createInterface({
+      input: fs.createReadStream(DOWNLOAD_LOG, { encoding: "utf8" }),
+      crlfDelay: Infinity,
+    });
+    rl.on("line", (line) => {
+      if (!line) return;
+      try { rows.push(JSON.parse(line)); } catch { /* torn line from a crash */ }
+    });
+    rl.on("close", () => resolve(rows));
+    rl.on("error", reject);
+  });
+}
+
+function tokensMatch(provided, expected) {
+  const a = crypto.createHash("sha256").update(provided).digest();
+  const b = crypto.createHash("sha256").update(expected).digest();
+  return crypto.timingSafeEqual(a, b);
+}
+
+function adminToken() {
+  const token = process.env.ADMIN_TOKEN || "";
+  return token.length >= 16 ? token : "";
+}
+
+function adminEmail() {
+  return String(process.env.ADMIN_EMAIL || "").trim().toLowerCase();
+}
+function adminPassword() {
+  return String(process.env.ADMIN_PASSWORD || "");
+}
+function adminConfigured() {
+  return validEmail(adminEmail()) && adminPassword().length >= 8;
+}
+
+const ADMIN_TTL_SEC = 7 * 24 * 3600;
+const adminFails = new Map(); // ip -> { count, reset }
+
+function adminSecret() {
+  return crypto.createHash("sha256").update(adminPassword()).digest();
+}
+
+function parseCookies(req) {
+  const out = {};
+  for (const part of String(req.get("cookie") || "").split(";")) {
+    const i = part.indexOf("=");
+    if (i === -1) continue;
+    const key = part.slice(0, i).trim();
+    try { out[key] = decodeURIComponent(part.slice(i + 1).trim()); }
+    catch { out[key] = ""; }
+  }
+  return out;
+}
+
+function signAdminSession() {
+  const body = Buffer.from(JSON.stringify({
+    email: adminEmail(),
+    exp: Date.now() + ADMIN_TTL_SEC * 1000,
+  })).toString("base64url");
+  const sig = crypto.createHmac("sha256", adminSecret()).update(body).digest("base64url");
+  return `${body}.${sig}`;
+}
+
+function readAdminSession(req) {
+  if (!adminConfigured()) return null;
+  const token = parseCookies(req).admin_session;
+  if (!token) return null;
+  const dot = token.lastIndexOf(".");
+  if (dot <= 0) return null;
+  const body = token.slice(0, dot);
+  const sig = token.slice(dot + 1);
+  const expected = crypto.createHmac("sha256", adminSecret()).update(body).digest("base64url");
+  const a = Buffer.from(sig);
+  const b = Buffer.from(expected);
+  if (a.length !== b.length || !crypto.timingSafeEqual(a, b)) return null;
+  let data;
+  try { data = JSON.parse(Buffer.from(body, "base64url").toString()); }
+  catch { return null; }
+  if (!data || data.email !== adminEmail() || typeof data.exp !== "number" || Date.now() > data.exp) return null;
+  return data;
+}
+
+function adminCookie(value, req, clear) {
+  const parts = [
+    `admin_session=${clear ? "" : value}`,
+    "HttpOnly",
+    "SameSite=Lax",
+    "Path=/admin",
+    clear ? "Max-Age=0" : `Max-Age=${ADMIN_TTL_SEC}`,
+  ];
+  if (req.secure) parts.push("Secure");
+  return parts.join("; ");
+}
+
+function adminLocked(ip) {
+  const rec = adminFails.get(ip);
+  if (!rec) return false;
+  if (Date.now() > rec.reset) { adminFails.delete(ip); return false; }
+  return rec.count >= 8;
+}
+
+function adminFail(ip) {
+  const rec = adminFails.get(ip);
+  if (!rec || Date.now() > rec.reset) adminFails.set(ip, { count: 1, reset: Date.now() + 15 * 60_000 });
+  else rec.count += 1;
+}
+
+function groupDownloads(rows) {
+  const byEmail = new Map();
+  for (const row of rows) {
+    if (!row || typeof row.email !== "string" || typeof row.brochure !== "string") continue;
+    if (!byEmail.has(row.email)) byEmail.set(row.email, { email: row.email, counts: {}, last: "", events: [] });
+    const group = byEmail.get(row.email);
+    group.counts[row.brochure] = (group.counts[row.brochure] || 0) + 1;
+    const at = typeof row.at === "string" ? row.at : "";
+    group.events.push({ brochure: row.brochure, at });
+    if (at > group.last) group.last = at;
+  }
+  for (const group of byEmail.values()) group.events.sort((a, b) => (a.at < b.at ? 1 : -1));
+  return [...byEmail.values()].sort((a, b) => (a.last < b.last ? 1 : -1));
+}
+
+function sendHtml(res, html) {
+  res.set("Cache-Control", "no-store");
+  res.set("X-Robots-Tag", "noindex, nofollow");
+  res.type("html").send(html);
+}
+
 // Logo is embedded in the email itself (inline attachment), so it shows without any public URL
-const LOGO = require("fs").readFileSync(path.join(__dirname, "public", "logo.png")).toString("base64");
+const LOGO = fs.readFileSync(path.join(__dirname, "public", "logo.png")).toString("base64");
 function emailTemplate(code) {
   const digits = code.split("").map((d) =>
     `<td style="padding:0 4px"><div style="width:44px;height:54px;line-height:54px;text-align:center;font-size:26px;font-weight:700;color:#16161A;background:#ffffff;border:1px solid #E6E6EA;border-radius:10px">${d}</div></td>`
@@ -99,10 +269,102 @@ app.post("/api/verify-otp", (req, res) => {
 app.get("/api/download/:id", (req, res) => {
   const s = sessions.get(req.query.token);
   if (!s || Date.now() > s.expires) return res.status(401).send("Please verify your email first.");
-  const file = BROCHURES[req.params.id];
-  if (!file) return res.status(404).send("Not found");
-  res.download(path.join(__dirname, "brochures", file));
+  const brochure = req.params.id;
+  const item = BROCHURES[brochure];
+  if (!item) return res.status(404).send("Not found");
+  const full = path.join(__dirname, "brochures", item.file);
+  if (!fs.existsSync(full)) return res.status(404).send("Not found");
+
+  // The page sends HEAD to check the token, then GET to save the file. Only GET is a download.
+  if (req.method === "GET") {
+    try { recordDownload(s.email, brochure); }
+    catch (err) { console.error("Failed to record download:", err); }
+  }
+  res.download(full, item.downloadName, (err) => {
+    if (!err) return;
+    console.error(err);
+    if (!res.headersSent) res.status(404).send("Not found");
+  });
 });
 
+app.get("/admin", async (req, res) => {
+  if (!adminConfigured()) return res.status(404).send("Not found");
+  if (!readAdminSession(req)) {
+    const error = req.query.e === "1" || req.query.e === "2" ? req.query.e : "";
+    return sendHtml(res, loginPage(error));
+  }
+  try {
+    sendHtml(res, dashboardPage(groupDownloads(await readDownloads())));
+  } catch (err) {
+    console.error(err);
+    res.status(500).send("Could not read download log");
+  }
+});
+
+app.post("/admin/login", (req, res) => {
+  if (!adminConfigured()) return res.status(404).send("Not found");
+  const ip = req.ip || "unknown";
+  if (adminLocked(ip)) return res.redirect(303, "/admin?e=2");
+  const email = String(req.body.email || "").trim().toLowerCase();
+  const password = String(req.body.password || "");
+  const emailOk = tokensMatch(email, adminEmail());
+  const passwordOk = tokensMatch(password, adminPassword());
+  if (!emailOk || !passwordOk) {
+    adminFail(ip);
+    return res.redirect(303, "/admin?e=1");
+  }
+  adminFails.delete(ip);
+  res.setHeader("Set-Cookie", adminCookie(signAdminSession(), req, false));
+  res.redirect(303, "/admin");
+});
+
+app.post("/admin/logout", (req, res) => {
+  if (!adminConfigured()) return res.status(404).send("Not found");
+  res.setHeader("Set-Cookie", adminCookie("", req, true));
+  res.redirect(303, "/admin");
+});
+
+app.get("/api/downloads", async (req, res) => {
+  const secret = adminToken();
+  if (!secret) return res.status(404).send("Not found");
+  const header = req.get("authorization") || "";
+  const presented = header.startsWith("Bearer ") ? header.slice("Bearer ".length).trim() : "";
+  if (!presented || !tokensMatch(presented, secret)) return res.status(401).send("Unauthorized");
+  try {
+    const downloads = await readDownloads();
+    const byEmail = new Map();
+    for (const row of downloads) {
+      if (!row || !row.email || !row.brochure) continue;
+      if (!byEmail.has(row.email)) byEmail.set(row.email, {});
+      const counts = byEmail.get(row.email);
+      counts[row.brochure] = (counts[row.brochure] || 0) + 1;
+    }
+    res.set("Cache-Control", "no-store");
+    res.json({
+      downloads,
+      byEmail: [...byEmail.entries()].map(([email, brochures]) => ({ email, brochures })),
+    });
+  } catch (err) {
+    console.error(err);
+    res.status(500).send("Could not read download log");
+  }
+});
+
+function shutdown() {
+  try { fs.fsyncSync(logFd); } catch { /* already closed */ }
+  try { fs.closeSync(logFd); } catch { /* already closed */ }
+  process.exit(0);
+}
+process.once("SIGTERM", shutdown);
+process.once("SIGINT", shutdown);
+
 const PORT = process.env.PORT || 3000; // Hostinger provides PORT
-app.listen(PORT, () => console.log(`Running on port ${PORT}`));
+if (require.main === module) {
+  if (!adminConfigured()) {
+    console.warn("Set ADMIN_EMAIL and ADMIN_PASSWORD (8+ characters) in .env to open /admin.");
+  }
+  app.listen(PORT, () => {
+    console.log(`Running on port ${PORT}`);
+    console.log(`Download log: ${DOWNLOAD_LOG}`);
+  });
+}
