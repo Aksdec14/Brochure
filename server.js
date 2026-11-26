@@ -23,9 +23,21 @@ app.use(express.static(path.join(ROOT, "public"))); // index.html goes in /publi
 
 // Brochure files live in /brochures (NOT public) so they can't be downloaded without verifying
 const BROCHURES = {
-  "fusionedge-brochure": {
-    file: "FusionEdge_Brochure_Page1_Liner_Removed.pdf",
-    downloadName: "FusionEdge Brochure.pdf",
+  "fusionedge-ppm": {
+    file: "FusionEdge_PPM.pdf",
+    downloadName: "FusionEdge PPM.pdf",
+  },
+  "fusionedge-digital-checklist": {
+    file: "FusionEdge_Digital_Checklist.pdf",
+    downloadName: "FusionEdge Digital Checklist.pdf",
+  },
+  "fusionedge-asset-management-lifecycle": {
+    file: "FusionEdge_Asset_Management_Lifecycle.pdf",
+    downloadName: "FusionEdge Asset Management Lifecycle.pdf",
+  },
+  "fusionedge-attendance-management": {
+    file: "FusionEdge_Attendance_Management.pdf",
+    downloadName: "FusionEdge Attendance Management.pdf",
   },
 };
 

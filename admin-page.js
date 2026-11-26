@@ -1,8 +1,8 @@
 const LABELS = {
-  "fusionedge-brochure": "FusionEdge Brochure",
-  "product-catalog": "Product Catalog",
-  "pricing-guide": "Pricing Guide",
-  "company-profile": "Company Profile",
+  "fusionedge-ppm": "FusionEdge PPM",
+  "fusionedge-digital-checklist": "FusionEdge Digital Checklist",
+  "fusionedge-asset-management-lifecycle": "FusionEdge Asset Management Lifecycle",
+  "fusionedge-attendance-management": "FusionEdge Attendance Management",
 };
 const KNOWN = Object.keys(LABELS);
 
