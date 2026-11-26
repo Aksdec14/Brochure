@@ -302,11 +302,6 @@ function emailTemplate(code) {
     </td></tr>
     <tr><td align="center" style="padding:28px 36px">
       <table cellpadding="0" cellspacing="0"><tr>${digits}</tr></table>
-      <table cellpadding="0" cellspacing="0" align="center" role="presentation" style="margin-top:16px"><tr>
-        <td bgcolor="#5D1F72" style="background:#5D1F72;border-radius:999px;padding:12px 22px;font-family:Helvetica,Arial,sans-serif;font-size:15px;font-weight:700;line-height:20px">
-          <span style="color:#ffffff;user-select:none;-webkit-user-select:none">Copy</span><span style="color:#ffffff">&nbsp;&nbsp;</span><span style="color:#ffffff;letter-spacing:1px;user-select:all;-webkit-user-select:all;-moz-user-select:all">${code}</span>
-        </td>
-      </tr></table>
       <p style="margin:14px 0 0;font-size:14px;color:#6B6B76">This code expires in <b style="color:#16161A;background:#FFF3D6;padding:1px 4px;border-radius:4px">10 minutes</b></p>
     </td></tr>
     <tr><td style="padding:0 36px 28px">
