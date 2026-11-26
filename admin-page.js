@@ -3,6 +3,7 @@ const LABELS = {
   "fusionedge-digital-checklist": "FusionEdge Digital Checklist",
   "fusionedge-asset-management-lifecycle": "FusionEdge Asset Management Lifecycle",
   "fusionedge-attendance-management": "FusionEdge Attendance Management",
+  "fusionedge-visitor-management": "FusionEdge Visitor Management",
 };
 const KNOWN = Object.keys(LABELS);
 

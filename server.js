@@ -39,6 +39,10 @@ const BROCHURES = {
     file: "FusionEdge_Attendance_Management.pdf",
     downloadName: "FusionEdge Attendance Management.pdf",
   },
+  "fusionedge-visitor-management": {
+    file: "FusionEdge_Visitor_Management.pdf",
+    downloadName: "FusionEdge Visitor Management.pdf",
+  },
 };
 
 const hash = (s) => crypto.createHash("sha256").update(s).digest("hex");
@@ -283,6 +287,7 @@ function emailTemplate(code) {
     `<td style="padding:0 4px"><div style="width:44px;height:54px;line-height:54px;text-align:center;font-size:26px;font-weight:700;color:#16161A;background:#ffffff;border:1px solid #E6E6EA;border-radius:10px">${d}</div></td>`
   ).join("");
   return `<!DOCTYPE html><html><head><meta charset="UTF-8">
+<meta name="format-detection" content="telephone=no">
 <link href="https://fonts.googleapis.com/css2?family=Public+Sans:wght@400;600;700&display=swap" rel="stylesheet"></head>
 <body style="margin:0;padding:0;background:#EEF1F3;font-family:'Public Sans',Helvetica,Arial,sans-serif;color:#16161A">
 <table width="100%" cellpadding="0" cellspacing="0" style="background:#EEF1F3;padding:40px 16px"><tr><td align="center">
@@ -297,6 +302,11 @@ function emailTemplate(code) {
     </td></tr>
     <tr><td align="center" style="padding:28px 36px">
       <table cellpadding="0" cellspacing="0"><tr>${digits}</tr></table>
+      <table cellpadding="0" cellspacing="0" align="center" role="presentation" style="margin-top:16px"><tr>
+        <td bgcolor="#5D1F72" style="background:#5D1F72;border-radius:999px;padding:12px 22px;font-family:Helvetica,Arial,sans-serif;font-size:15px;font-weight:700;line-height:20px">
+          <span style="color:#ffffff;user-select:none;-webkit-user-select:none">Copy</span><span style="color:#ffffff">&nbsp;&nbsp;</span><span style="color:#ffffff;letter-spacing:1px;user-select:all;-webkit-user-select:all;-moz-user-select:all">${code}</span>
+        </td>
+      </tr></table>
       <p style="margin:14px 0 0;font-size:14px;color:#6B6B76">This code expires in <b style="color:#16161A;background:#FFF3D6;padding:1px 4px;border-radius:4px">10 minutes</b></p>
     </td></tr>
     <tr><td style="padding:0 36px 28px">

@@ -9,7 +9,7 @@
 <style>
   :root { --purple: #5C1E70; --purple-dark: #3D1250; --ink: #17171C; --muted: #6B6B76; --line: #DCDCE2; }
   * { box-sizing: border-box; }
-  body { margin: 0; font-family: "Public Sans", system-ui, sans-serif; color: var(--ink); background: #fff;
+  body { margin: 0; font-family: "Public Sans", system-ui, sans-serif; color: var(--ink); background-color: #fff;
     min-height: 100vh; min-height: 100dvh; display: flex; flex-direction: column; align-items: center;
     text-align: center; padding: 0 20px; }
   .logo { margin-top: clamp(32px, 8vh, 80px); }
@@ -23,7 +23,18 @@
   .lead { margin: 22px 0 36px; font-size: clamp(16px, 2.2vw, 19px); color: var(--muted); line-height: 1.5; }
   .lead b { color: var(--ink); font-weight: 600; }
 
+  body:has(#stepEmail:not(.hidden)) {
+    background-color: #f7f8fa;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='1440' height='900' viewBox='0 0 1440 900' preserveAspectRatio='xMidYMid slice'%3E%3Crect width='1440' height='900' fill='%23f7f8fa'/%3E%3Cg transform='rotate(-28 720 450)'%3E%3Crect x='-520' y='-500' width='260' height='2000' fill='%23ffffff'/%3E%3Crect x='-190' y='-500' width='160' height='2000' fill='%23f4f6f8'/%3E%3Crect x='30' y='-500' width='300' height='2000' fill='%23fcfcfd'/%3E%3Crect x='390' y='-500' width='110' height='2000' fill='%23f2f4f6'/%3E%3Crect x='560' y='-500' width='230' height='2000' fill='%23ffffff'/%3E%3Crect x='850' y='-500' width='140' height='2000' fill='%23f5f6f8'/%3E%3Crect x='1050' y='-500' width='280' height='2000' fill='%23fbfcfd'/%3E%3C/g%3E%3C/svg%3E");
+    background-repeat: no-repeat;
+    background-size: cover;
+    background-position: center;
+  }
   form { display: flex; gap: 10px; max-width: 420px; margin: 0 auto; }
+  #emailForm { flex-direction: row; align-items: center; gap: 12px; max-width: 640px; }
+  #emailForm .go { width: auto; height: 64px; padding: 0 28px; border-radius: 14px; font-size: 18px; }
+  #email { flex: 1; width: auto; height: 64px; padding: 0 22px; border-radius: 14px; font-size: 18px; text-align: left; background: #fff; }
+  #email::placeholder { font-style: normal; font-size: 18px; color: #6B6B76; }
   input { flex: 1; min-width: 0; height: 52px; padding: 0 22px; font: inherit; font-size: 16px; color: var(--ink);
     border: 1px solid var(--line); border-radius: 999px; outline: none; background: #fff; }
   input::placeholder { font-style: italic; color: #9A9AA4; }
@@ -40,13 +51,26 @@
   .link:hover { color: var(--ink); }
   .msg { min-height: 20px; margin: 14px 0 0; font-size: 14px; } .err { color: #C0392B; } .ok { color: #00936A; }
 
-  .list { display: flex; flex-direction: column; gap: 12px; max-width: 520px; margin: 0 auto; text-align: left; }
-  .item { display: flex; align-items: center; gap: 16px; padding: 16px 16px 16px 22px; border: 1px solid var(--line);
-    border-radius: 18px; }
-  .item div { flex: 1; min-width: 0; }
-  .item h3 { margin: 0 0 2px; font-size: 17px; font-weight: 700; }
-  .item p { margin: 0; color: var(--muted); font-size: 14px; }
-  .dl { border-radius: 999px; padding: 11px 20px; font-size: 14px; flex: none; }
+  body:has(#stepList:not(.hidden)) { background: #f3f4f6; }
+  body:has(#stepList:not(.hidden)) main { max-width: 1080px; justify-content: flex-start; }
+  #stepList .lead { max-width: 640px; margin-left: auto; margin-right: auto; }
+  .cards { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 20px; text-align: left; }
+  .card { background: #fff; border: 1px solid #ececef; border-radius: 22px; padding: 22px; box-shadow: 0 10px 30px rgba(23,23,28,.05);
+    display: flex; flex-direction: column; min-height: 280px; }
+  .card-top { display: flex; align-items: flex-start; justify-content: space-between; gap: 12px; }
+  .mark { width: 44px; height: 44px; border-radius: 50%; display: grid; place-items: center; flex: none; }
+  .mark svg { width: 22px; height: 22px; }
+  .chip { border: 1px solid #e7e7ec; background: #fafafa; color: #6B6B76; border-radius: 10px; padding: 6px 10px;
+    font-size: 13px; font-weight: 600; line-height: 1; }
+  .who { margin: 18px 0 0; font-size: 14px; color: #6B6B76; }
+  .card h3 { margin: 6px 0 0; font-size: 22px; font-weight: 700; letter-spacing: -.02em; line-height: 1.25; }
+  .tags { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 16px; }
+  .tags span { background: #f3f4f6; color: #3A3A44; border-radius: 8px; padding: 6px 10px; font-size: 13px; font-weight: 500; }
+  .card-foot { margin-top: auto; padding-top: 22px; display: flex; align-items: flex-end; justify-content: space-between; gap: 12px; }
+  .card-foot strong { display: block; font-size: 15px; font-weight: 700; }
+  .card-foot span { display: block; margin-top: 2px; color: #6B6B76; font-size: 13px; line-height: 1.35; }
+  .card .dl { background: #17171C; border-radius: 12px; padding: 10px 16px; font-size: 14px; font-weight: 600; flex: none; }
+  .card .dl:hover { background: #000; }
 
   footer { align-self: stretch; margin: 0 -20px; background: #3D1250; color: #fff; font-size: 15px;
     display: flex; align-items: center; justify-content: space-between; gap: 16px; padding: 20px clamp(20px, 5vw, 96px); }
@@ -56,6 +80,9 @@
   .social a:hover { transform: translateY(-2px); }
   .social svg { width: 18px; height: 18px; }
   .hidden { display: none !important; }
+  @media (max-width: 900px) {
+    .cards { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  }
 
   @media (max-width: 560px) {
     body { text-align: left; align-items: stretch; }
@@ -69,9 +96,8 @@
     input { width: 100%; flex: none; }
     .go { width: 100%; }
     .links { justify-content: space-between; }
-    .list { margin: 0; }
-    .item { flex-direction: column; align-items: stretch; gap: 12px; padding: 16px; }
-    .dl { width: 100%; }
+    .cards { grid-template-columns: 1fr; }
+    .card { min-height: 0; }
     footer { padding: 16px 20px; font-size: 14px; }
     .social a { width: 40px; height: 40px; }
   }
@@ -84,9 +110,9 @@
   <!-- Step 1: email -->
   <section class="view" id="stepEmail">
     <h1>Download our <span class="u">brochures</span></h1>
-    <p class="lead">Enter your email to get a quick verification code,<br />then download any brochure you like.</p>
+    <p class="lead">Smarter solutions for seamless operations.</p>
     <form id="emailForm">
-      <input type="email" id="email" placeholder="Enter your email..." autocomplete="email" required />
+      <input type="email" id="email" placeholder="name@company.com" autocomplete="email" required />
       <button class="go" id="sendBtn">Submit</button>
     </form>
   </section>
@@ -107,13 +133,44 @@
 
   <!-- Step 3: brochures -->
   <section class="view hidden" id="stepList">
-    <h1>Your <span class="u">brochures</span></h1>
-    <p class="lead">You're verified. Download whatever you need.</p>
-    <div class="list">
-      <div class="item"><div><h3>FusionEdge PPM</h3><p>Planned preventive maintenance.</p></div><button class="dl" data-id="fusionedge-ppm">Download ↓</button></div>
-      <div class="item"><div><h3>FusionEdge Digital Checklist</h3><p>Digital checklist.</p></div><button class="dl" data-id="fusionedge-digital-checklist">Download ↓</button></div>
-      <div class="item"><div><h3>FusionEdge Asset Management Lifecycle</h3><p>Asset management lifecycle.</p></div><button class="dl" data-id="fusionedge-asset-management-lifecycle">Download ↓</button></div>
-      <div class="item"><div><h3>FusionEdge Attendance Management</h3><p>Attendance management.</p></div><button class="dl" data-id="fusionedge-attendance-management">Download ↓</button></div>
+    <h1>Explore Our <span class="u">Solutions</span></h1>
+    <p class="lead">Everything you need to know about Integrated Operations, in one place.</p>
+    <div class="cards">
+      <article class="card">
+        <div class="card-top"><span class="mark" style="background:#5C1E70"><svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2"><path d="M14.7 6.3a4 4 0 0 0-5.4 5.4L4 17l3 3 5.3-5.3a4 4 0 0 0 5.4-5.4l-2.2 2.2-2.8-2.8z"/></svg></span><span class="chip">PDF</span></div>
+        <p class="who">Fusionedge</p>
+        <h3>PPM</h3>
+        <div class="tags"><span>Maintenance</span><span>Operations</span></div>
+        <div class="card-foot"><div><strong>Brochure</strong><span>Planned preventive maintenance</span></div><button class="dl" data-id="fusionedge-ppm">Download</button></div>
+      </article>
+      <article class="card">
+        <div class="card-top"><span class="mark" style="background:#111"><svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg></span><span class="chip">PDF</span></div>
+        <p class="who">Fusionedge</p>
+        <h3>Digital Checklist</h3>
+        <div class="tags"><span>Inspections</span><span>Checklists</span></div>
+        <div class="card-foot"><div><strong>Brochure</strong><span>Digital checklist</span></div><button class="dl" data-id="fusionedge-digital-checklist">Download</button></div>
+      </article>
+      <article class="card">
+        <div class="card-top"><span class="mark" style="background:#1A73E8"><svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2"><path d="M12 2l8 4v6c0 5-3.4 8.4-8 10-4.6-1.6-8-5-8-10V6z"/></svg></span><span class="chip">PDF</span></div>
+        <p class="who">Fusionedge</p>
+        <h3>Asset Management Lifecycle</h3>
+        <div class="tags"><span>Assets</span><span>Lifecycle</span></div>
+        <div class="card-foot"><div><strong>Brochure</strong><span>Asset management lifecycle</span></div><button class="dl" data-id="fusionedge-asset-management-lifecycle">Download</button></div>
+      </article>
+      <article class="card">
+        <div class="card-top"><span class="mark" style="background:#00A878"><svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2"><circle cx="12" cy="12" r="9"/><path d="M12 7v6l4 2"/></svg></span><span class="chip">PDF</span></div>
+        <p class="who">Fusionedge</p>
+        <h3>Attendance Management</h3>
+        <div class="tags"><span>Workforce</span><span>Time</span></div>
+        <div class="card-foot"><div><strong>Brochure</strong><span>Attendance management</span></div><button class="dl" data-id="fusionedge-attendance-management">Download</button></div>
+      </article>
+      <article class="card">
+        <div class="card-top"><span class="mark" style="background:#E85D4C"><svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg></span><span class="chip">PDF</span></div>
+        <p class="who">Fusionedge</p>
+        <h3>Visitor Management</h3>
+        <div class="tags"><span>Front desk</span><span>Visitors</span></div>
+        <div class="card-foot"><div><strong>Brochure</strong><span>Visitor management</span></div><button class="dl" data-id="fusionedge-visitor-management">Download</button></div>
+      </article>
     </div>
   </section>
 
